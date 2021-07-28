@@ -18,12 +18,19 @@ interface IERC20 {
   event Approval(address indexed tokenOwner, address indexed spender, uint tokens);
 }
 
+interface Opensea {
+    function balanceOf(address tokenOwner, uint tokenId) external view returns (bool);
+
+    function safeTransferFrom(address _from, address _to, uint _id, uint _value, bytes memory _data) external;
+}
+
 contract BoredPunkYachtClub is ERC721, Ownable {
 
     event Mint(address indexed _to, uint indexed _tokenId);
 
     bytes32 public merkleRoot = ""; // Construct this from (oldId, newId) tuple elements
     address public openseaSharedAddress = 0x495f947276749Ce646f68AC8c248420045cb7b5e;
+    address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     uint public maxSupply = 888; // Maximum tokens that can be minted
     uint public totalSupply = 0; // This is our mint counter as well
     mapping(uint => string) public tokenURIs; // Metadata location for each token, updatable by owner
@@ -71,12 +78,10 @@ contract BoredPunkYachtClub is ERC721, Ownable {
         require(verify(merkleRoot, leaf, proof), "Not a valid element in the Merkle tree");
 
         // Verify that msg.sender is the owner of the old token
-        // TODO: OpenSea contract doesn't even have an ownerOf() method. This is insecure until we can figure out how to verify ownership
-        // require(IERC721(openseaSharedAddress).ownerOf(oldId) == msg.sender, "Only token owner can mintAndBurn"); // Error coming here
+        require(Opensea(openseaSharedAddress).balanceOf(msg.sender, oldId), "Only token owner can mintAndBurn"); // Error coming here
 
         // Transfer the old OpenSea Shared Storefront token to this contract (with ability for owner to retrieve in case of error)
-        // TODO: This is also reverting. No idea why.
-        // IERC721(openseaSharedAddress).safeTransferFrom(msg.sender, address(this), oldId);
+        Opensea(openseaSharedAddress).safeTransferFrom(msg.sender, burnAddress, oldId, 1, "");
 
         // Mint new token
         _mint(msg.sender, newId);
@@ -85,6 +90,15 @@ contract BoredPunkYachtClub is ERC721, Ownable {
 
         // Initialize the rewards multiplier
         tokenMultipliers[newId] = curMul;
+    }
+
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes calldata data
+    ) public returns (bytes4) {
+        return 0xf0b9e5ba;
     }
 
     function verify(bytes32 root, bytes32 leaf, bytes32[] memory proof) public pure returns (bool) {
