@@ -33,7 +33,7 @@ contract BoredPunkYachtClub is ERC721, Ownable {
     address public burnAddress = 0x000000000000000000000000000000000000dEaD;
     uint public maxSupply = 888; // Maximum tokens that can be minted
     uint public totalSupply = 0; // This is our mint counter as well
-    mapping(uint => string) public tokenURIs; // Metadata location for each token, updatable by owner
+    string public _baseTokenURI;
 
     // Royalty variables below
     uint public spoofInitBalance = 1 ether;
@@ -109,14 +109,14 @@ contract BoredPunkYachtClub is ERC721, Ownable {
      * @dev Returns a URI for a given token ID's metadata
      */
     function tokenURI(uint256 _tokenId) public view override returns (string memory) {
-        return tokenURIs[_tokenId];
+        return string(abi.encodePacked(_baseTokenURI, Strings.toString(_tokenId)));
     }
 
     /**
-     * @dev Updates the token URI for an existing token.
+     * @dev Updates the base token URI for the metadata
      */
-    function setTokenURI(uint _tokenId, string memory _tokenURI) public onlyOwner {
-        tokenURIs[_tokenId] = _tokenURI;
+    function setBaseTokenURI(string memory __baseTokenURI) public onlyOwner {
+        _baseTokenURI = __baseTokenURI;
     }
 
     function setMerkleRoot(bytes32 _merkleRoot) public onlyOwner {
