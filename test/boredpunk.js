@@ -8,6 +8,7 @@ const { expect } = require('chai');
 
 // const MerkleProofWrapper = artifacts.require('MerkleProofWrapper');
 const BoredPunk = artifacts.require("BoredPunkYachtClub");
+const FeeSplitter = artifacts.require("FeeSplitter");
 
 function getMapping() {
     const mapping = JSON.parse(fs.readFileSync("mapping.json"));
@@ -34,6 +35,7 @@ contract('BoredPunkYachtClub', function (accounts) {
   beforeEach(async function () {
     // this.boredPunk = await MerkleProofWrapper.new();
     this.boredPunk = await BoredPunk.deployed();
+    this.feeSplitter = await FeeSplitter.deployed();
   });
 
   describe('verify', function () {
@@ -187,6 +189,23 @@ contract('BoredPunkYachtClub', function (accounts) {
         console.log(weiBalance, weiBalance2);
         console.log(`ethDiff: ${ethDiff}`);
 
+    });
+
+    it('lets you split funds', async function () {
+        let dev1Address = await this.feeSplitter.contract.methods.dev1().call();
+        let weiBalance = await web3.eth.getBalance(dev1Address);
+
+        let tx = await web3.eth.sendTransaction({
+            "from": accounts[1],
+            "to": this.feeSplitter.address,
+            "value": ethers.utils.parseEther("10"),
+            "gasLimit": 500000
+        });
+        console.log(`Send eth gas used: ${tx.gasUsed}`);
+
+        let weiBalanceAfter = await web3.eth.getBalance(dev1Address);
+        let weiDiff = weiBalanceAfter - weiBalance;
+        console.log(`weiDiff: ${weiDiff}`);
     });
   });
 });
